@@ -1,0 +1,309 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ConsoleApp1
+{
+    abstract class Weapon
+    {
+        public abstract void Shot();
+    }
+    abstract class Movement
+    {
+        public abstract void Move();
+    }
+    class Lance : Weapon
+    {
+        public override void Shot()
+        {
+            Console.WriteLine("Кидает копье");
+        }
+    }
+    class Sword : Weapon
+    {
+        public override void Shot()
+        {
+            Console.WriteLine("Бьет мечом");
+        }
+    }
+    class RunMovement : Movement
+    {
+        public override void Move()
+        {
+            Console.WriteLine("Идет пешком");
+        }
+    }
+    class SwimMovement : Movement
+    {
+        public override void Move()
+        {
+            Console.WriteLine("Плывет");
+        }
+    }
+    abstract class Type
+    {
+        public abstract string Types();
+    }
+    class ConcreteType : Type
+    {
+        public string ttype;
+        public ConcreteType(string type)
+        {
+            ttype = type;
+        }
+        public override string Types()
+        {
+            Console.WriteLine("Тип войск: " + ttype);
+            return ttype;
+        }
+    }
+    abstract class Count
+    {
+        public abstract int Counts();
+    }
+    class ConcreteCount : Count
+    {
+        public int ccount;
+        public ConcreteCount(int count)
+        {
+            ccount = count;
+        }
+        public override int Counts()
+        {
+            Console.WriteLine("Колличество: " + ccount);
+            return ccount;
+        }
+    }
+    abstract class HeroesFactory
+    {
+        public abstract Type CreateType();
+        public abstract Count CreateCount();
+        public abstract Movement CreateMovement();
+        public abstract Weapon CreateWeapon();
+    }
+
+    class HumanFactory : HeroesFactory
+    {
+        private string ttype;
+        private int ccount;
+       public HumanFactory(string type,int count)
+        {
+            ttype = type;
+            ccount = count;
+        }
+        public override Type CreateType()
+        {
+            return new ConcreteType( ttype);
+        }
+        public override Count CreateCount()
+        {
+            return new ConcreteCount(ccount);
+        }
+        
+        public override Movement CreateMovement()
+        {
+            return new RunMovement();
+        }
+        public override Weapon CreateWeapon()
+        {
+            return new Sword();
+        }
+    }
+    class Heroes
+    {
+        
+        private Weapon weapon;
+        private Movement movement;
+        private Type type;
+        private Count count;
+        public Commander commander;
+        public Heroes(HeroesFactory factory, string nameOfCommander)
+        {
+            weapon = factory.CreateWeapon();
+            movement = factory.CreateMovement();
+            type = factory.CreateType();
+            count = factory.CreateCount();
+            commander = Commander.getInstance(nameOfCommander);
+        }
+        public void Run()
+        {
+            movement.Move();
+        }
+        public void Shot()
+        {
+            weapon.Shot();
+        }
+        public void Type()
+        {
+            type.Types();
+        }
+        public void Count()
+        {
+            count.Counts();
+        }
+        
+    }
+   class Commander
+    {
+        private static Commander instance;
+        public  string Name { get; private set; }
+        protected Commander (string name)
+        {
+            this.Name = name;
+        }
+        public static Commander getInstance(string name)
+        {
+            if (instance == null)
+                instance = new Commander(name);
+            return instance;
+        }
+
+    }
+    class NameOfMainHero
+    {
+        public string NameOfHero { get; set; }
+    }
+    class Eyes
+    {
+        public string Color { get; set; }
+    }
+    class Skill
+    {
+        public string NameOfSkill { get; set; }
+    }
+   
+    class MainHero 
+    {
+        public Eyes Eyes { get; set; }
+        public NameOfMainHero NameOfMainHero { get; set; }
+        public Skill Skill { get; set; }
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            if (NameOfMainHero !=null)
+            {
+                sb.Append(NameOfMainHero.NameOfHero + "\n");
+            }
+            if (Eyes != null)
+            {
+                sb.Append(Eyes.Color + "\n");
+            }
+
+            if (Skill != null)
+            {
+                sb.Append(Skill.NameOfSkill + "\n");
+            }
+            return sb.ToString();
+        }
+       
+    }
+    abstract class MainHeroBuilder
+    {
+        public MainHero MainHero { get; set; }
+        public void CreateMainHero()
+        {
+            MainHero = new MainHero();
+        }
+        public abstract void SetNameOfMainHero();
+        public abstract void SetEyes();
+        public abstract void SetSkill();
+      
+      
+    }
+    class Creator //diretcor
+    {
+        public MainHero Create(MainHeroBuilder mainHeroBuilder)
+        {
+            mainHeroBuilder.CreateMainHero();
+            mainHeroBuilder.SetEyes();
+            mainHeroBuilder.SetNameOfMainHero();
+            mainHeroBuilder.SetSkill();
+
+            return mainHeroBuilder.MainHero;
+        }
+    }
+    class OgrMainHeroBuilder : MainHeroBuilder
+    {
+        public override void SetEyes()
+        {
+            this.MainHero.Eyes = new Eyes()
+            {
+                Color = "Зеленые глаза"
+            };
+
+        }
+        public override void SetSkill()
+        {
+            this.MainHero.Skill = new Skill() {NameOfSkill = "Удар с боку" };
+        }
+        public override void SetNameOfMainHero()
+        {
+            this.MainHero.NameOfMainHero = new NameOfMainHero() { NameOfHero = "Огрмаг" };
+        }
+       
+    }
+    [Serializable]
+    public abstract class Prototype<T>
+    {
+        // поверхностное копирование
+        public virtual T Clone()
+        {
+            return (T)MemberwiseClone();
+        }
+        // глубокое копирование
+        public virtual T DeepCopy()
+        {
+            using (var stream = new MemoryStream())
+            {
+                var context = new StreamingContext(StreamingContextStates.Clone);
+                var formatter = new BinaryFormatter { Context = context };
+                formatter.Serialize(stream, this);
+                stream.Position = 0;
+                return (T)formatter.Deserialize(stream);
+            }
+        }
+    }
+    [Serializable]
+    public class Person : Prototype<Person>
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+    }
+   
+    class Program
+    {
+        static void Main(string[] args)
+        {
+       
+            Heroes human = new Heroes(new HumanFactory("range",10),"Volcodav");
+            human.Run();
+            human.Shot();
+            human.Type();
+            human.Count();
+            Commander commander = Commander.getInstance("vwiemv");
+            Console.WriteLine(commander.Name);
+           
+            Creator creator = new Creator();
+            MainHeroBuilder builder = new OgrMainHeroBuilder();
+            MainHero ogrHero = creator.Create(builder);
+            Console.WriteLine(ogrHero.ToString());
+
+            // использование шаблона Прототип
+            var person = new Person { Name = "Anton" };
+            Console.WriteLine($"Name: {person.Name}, Id: {person.Id}");
+           
+            var clone = person.DeepCopy();
+            // иногда после клонирования нужно переопределить
+            // часть свойств объекта
+            clone.Id = Guid.NewGuid();
+            Console.WriteLine($"Name: {clone.Name}, Id: {clone.Id}");
+            Console.ReadLine();
+        }
+
+    }
+}
